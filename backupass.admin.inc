@@ -70,7 +70,7 @@ function backupass_form($form, $form_state)
     	if ($form_state['values']['adminaction'] == 1)
     	{
             $prejob = true;
-            $query = "select * from (SELECT `fileid`,`filename`,COUNT(`fileid`) as `FileCount` FROM `ba_filelist` where deletedby='' GROUP BY `filename`+`last_modified`+`filesize` ) as a where a.filecount > 1";
+            $query = "select * from (SELECT `fileid`,`filename`,COUNT(`fileid`) as `FileCount` FROM `ba_filelist` where deletedby='' GROUP BY `filename`,`last_modified`,`filesize` ) as a where a.filecount > 1";
             $pools = db_query($query);
             //$pools = $sql->execute();
             $rows = array();

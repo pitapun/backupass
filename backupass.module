@@ -2,58 +2,95 @@
 
 function backupass_menu() {
   
-  $items = array();
- 
-  $items['backupass']= array(
-    'title' => 'Backup Assistant',
-    //'title' => t('This is a demo page to show Drupal 7 table API'),
-    'description' => t('Check your backup file'),
-    'page callback' => 'backupass_main_form',
-    //'page arguments' => array('backupass_form'),
-    'access arguments' => array("administer backup assistant"),
-    'file' => 'backupass.admin.inc',
-    'type' => MENU_NORMAL_ITEM
-  );
+    $items = array();
+
+    $items['backupass']= array(
+      'title' => 'Backup Assistant',
+      'description' => t('Check your backup file'),
+      'page callback' => 'backupass_main_form',
+      'access arguments' => array("access backupass"),
+      'file' => 'backupass.admin.inc',
+      'type' => MENU_NORMAL_ITEM
+    );
+
+    $items['backupass/version']= array(
+      'title' => 'Check Version',
+      'description' => t('Check the version of a file.'),
+      'page callback' => 'backupass_version',
+      'access arguments' => array("access backupass"),
+      'file' => 'backupass_version.inc',
+      'type' => MENU_NORMAL_ITEM
+    );
   
-  $items['backupass/version']= array(
-    'title' => 'Check Version',
-    //'title' => t('This is a demo page to show Drupal 7 table API'),
-    'description' => t('Check the version of a file.'),
-    'page callback' => 'backupass_version',
-    'access arguments' => array("administer backup assistant"),
-    'file' => 'backupass_version.inc',
-    'type' => MENU_NORMAL_ITEM
-  );
-  
-  $items['backupass/getfile'] = array(
+    $items['backupass/getfile'] = array(
       'title' => 'Getfile',
       'description' => '',
       'page callback' => 'backupass_getfile',
-      'access arguments' => array("administer backup assistant"),
+      'access arguments' => array("access backupass getfile"),
       'file' => 'backupass_getfile.inc',
       'type' => MENU_NORMAL_ITEM
-  );
+    );
   
     $items['admin/settings/backupass'] = array(
-    'title' => 'Backup Assistant',
-    'description' => 'Find and manage backup file.',
-    'page callback' => 'backupass_main_form',
-    //'page arguments' => array('backupass_form'),
-    'access arguments' => array('administer backup assistant'),
-    'weight' => 0,
-    'file' => 'backupass.admin.inc',
+        'title' => 'Backup Assistant',
+        'description' => 'Find and manage backup file.',
+        'page callback' => 'backupass_main_form',
+        'access arguments' => array('access backupass'),
+        'weight' => 0,
+        'file' => 'backupass.admin.inc',
     );
     
-  $items['admin/settings/backupass_setting'] = array(
-    'title' => 'Backupass setting',
-    'description' => 'Set backup bath here',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('backupass_admin'),
-    'access arguments' => array('administer backup assistant settings'),
-    'type' => MENU_NORMAL_ITEM,
-   );
-  
-  return $items;
+    $items['admin/settings/backupass_setting'] = array(
+      'title' => 'Backupass setting',
+      'description' => 'Set backup bath here',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('backupass_admin'),
+      'access arguments' => array('administer backupass settings'),
+      'type' => MENU_NORMAL_ITEM,
+     );
+    
+    $items['backupass/cleanup']= array(
+      'title' => 'Clean up',
+      'description' => t('Clean up all deleted file'),
+      'page callback' => 'backupass_cleanup',
+      'access arguments' => array("administer backupass cleanup"),
+      'file' => 'backupass_version.inc',
+      'type' => MENU_NORMAL_ITEM
+    );
+    
+    return $items;
+}
+
+function backupass_permission() {
+  $permissions = array(
+    'administer backupass setting' => array(
+      'title' => t('Admin backupass'),
+      'description' => t('Admin the setting of backupass.'),
+    ),
+    'administer backupass cleanup' => array(
+      'title' => t('Clear deleted file'),
+      'description' => t('Clean up deleted file.'),
+      //'restrict access' => TRUE,
+    ),
+    'access backupass' => array(
+      'title' => t('Acess  backupass'),
+      'description' => t('Access the backupass.'),
+    ),
+    'access backupass getfile' => array(
+      'title' => t('Get file from backupass'),
+      'description' => t('Get file from the backupass.'),
+    ),
+  );
+
+  // Reset static cache to ensure all flag permissions are available.
+  drupal_static_reset('flag_get_flags');
+  $flags = flag_get_flags();
+  // Provide flag and unflag permissions for each flag.
+  foreach ($flags as $flag_name => $flag) {
+    $permissions += $flag->get_permissions();
+  }
+
+  return $permissions;
 }
 
 function backupass_admin() {
@@ -88,7 +125,29 @@ function backupass_admin() {
     '#description' => t("Path save all file with version"),
     '#required' => TRUE,
   );
-  return system_settings_form($form);
+  
+  $form['backupass_delete_timeout'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Clean deleted file in how many day(s)?'),
+    '#default_value' => variable_get('backupass_delete_timeout', '30'),
+    '#size' => 100,
+    '#maxlength' => 200,
+    '#description' => t("System will clean the file marked as deleted in backup and archive folder."),
+    '#required' => TRUE,
+  );
+  
+  $form = system_settings_form($form);
+  $form['link'] = array(
+      '#type' => 'item',
+      '#title' => t('Clean deleted file manually'),
+      '#markup' => l(t('Force clean deleted file'),'node',array(
+            'attributes' => array(
+            'onclick' => 'if(!confirm("Really Delete?")){return false;}',
+        )
+      )),
+      //'#attributes' => array('onclick' => 'if(!confirm("Really Delete?")){return false;}'),
+      );
+  return $form;
 }
 
 function backupass_main_form()
