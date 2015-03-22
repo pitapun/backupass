@@ -1,0 +1,5 @@
+name = Back up assistant
+description = Back up assistant reader
+core = 7.x
+package = Back up assistant
+version = 1.0

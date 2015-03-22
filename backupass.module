@@ -1,0 +1,104 @@
+<?php
+
+function backupass_menu() {
+  
+  $items = array();
+ 
+  $items['backupass']= array(
+    'title' => 'Backup Assistant',
+    //'title' => t('This is a demo page to show Drupal 7 table API'),
+    'description' => t('Check your backup file'),
+    'page callback' => 'backupass_main_form',
+    //'page arguments' => array('backupass_form'),
+    'access arguments' => array("administer backup assistant"),
+    'file' => 'backupass.admin.inc',
+    'type' => MENU_NORMAL_ITEM
+  );
+  
+  $items['backupass/version']= array(
+    'title' => 'Check Version',
+    //'title' => t('This is a demo page to show Drupal 7 table API'),
+    'description' => t('Check the version of a file.'),
+    'page callback' => 'backupass_version',
+    'access arguments' => array("administer backup assistant"),
+    'file' => 'backupass_version.inc',
+    'type' => MENU_NORMAL_ITEM
+  );
+  
+  $items['backupass/getfile'] = array(
+      'title' => 'Getfile',
+      'description' => '',
+      'page callback' => 'backupass_getfile',
+      'access arguments' => array("administer backup assistant"),
+      'file' => 'backupass_getfile.inc',
+      'type' => MENU_NORMAL_ITEM
+  );
+  
+    $items['admin/settings/backupass'] = array(
+    'title' => 'Backup Assistant',
+    'description' => 'Find and manage backup file.',
+    'page callback' => 'backupass_main_form',
+    //'page arguments' => array('backupass_form'),
+    'access arguments' => array('administer backup assistant'),
+    'weight' => 0,
+    'file' => 'backupass.admin.inc',
+    );
+    
+  $items['admin/settings/backupass_setting'] = array(
+    'title' => 'Backupass setting',
+    'description' => 'Set backup bath here',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('backupass_admin'),
+    'access arguments' => array('administer backup assistant settings'),
+    'type' => MENU_NORMAL_ITEM,
+   );
+  
+  return $items;
+}
+
+function backupass_admin() {
+  $form = array();
+
+  $form['backupass_target_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Target path'),
+    '#default_value' => variable_get('backupass_target_path', 'C:\ShareFolder'),
+    '#size' => 100,
+    '#maxlength' => 200,
+    '#description' => t("The path we want to backup"),
+    '#required' => TRUE,
+  );
+
+  $form['backupass_backup_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Backup path'),
+    '#default_value' => variable_get('backupass_backup_path', 'D:\BackupFolder'),
+    '#size' => 100,
+    '#maxlength' => 200,
+    '#description' => t("The path to store as a mirror"),
+    '#required' => TRUE,
+  );
+  
+  $form['backupass_archive_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Archive path'),
+    '#default_value' => variable_get('backupass_archive_path', 'E:\ArchiveFolder'),
+    '#size' => 100,
+    '#maxlength' => 200,
+    '#description' => t("Path save all file with version"),
+    '#required' => TRUE,
+  );
+  return system_settings_form($form);
+}
+
+function backupass_main_form()
+{
+    $output = array();
+    $output['filter'] = drupal_get_form('backupass_form_filter');
+    $output['tableform'] = drupal_get_form('backupass_form');
+    return $output;
+}
+function backupass_admin_submit($form, &$form_state)
+{
+    dsm($form_state);
+}

@@ -1,0 +1,135 @@
+<?php
+
+function backupass_schema()
+{
+    $schema['ba_file_archive'] = array(
+        'description' => 'Table to store archive file',
+        'fields' => array(
+          'file_archive_id' => array(
+            'description' => 'archive id',
+            'type' => 'serial',
+            'unsigned' => TRUE,
+            'not null' => TRUE,
+          ),
+          'fileid' => array(
+            'description' => 'file id',
+            'type' => 'int',
+            'unsigned' => TRUE,
+            'not null' => FALSE,
+          ),
+          'version' => array(
+            'description' => 'version of file',
+            'type' => 'varchar',
+            'length' => '10',
+            'not null' => FALSE,
+          ),
+          'path' => array(
+            'description' => 'File path',
+            'type' => 'varchar',
+            'length' => '200',
+            'not null' => FALSE,
+          ),
+          'file_createddate' => array(
+            'description' => 'File create date',
+            'type' => 'datetime',
+            'mysql_type' => 'datetime',
+            'not null' => TRUE,
+          ),
+        ),
+        'primary key' => array('file_archive_id'),
+      );
+
+    $schema['ba_file_version'] = array(
+        'description' => 'File version table',
+        'fields' => array(
+          'fileid' => array(
+            'description' => 'File id',
+            'type' => 'int',
+            'unsigned' => TRUE,
+            'not null' => TRUE,
+          ),
+          'version' => array(
+            'description' => 'File version',
+            'type' => 'int',
+            'unsigned' => TRUE,
+            'not null' => FALSE,
+          ),
+          'version_date' => array(
+            'description' => 'Version date',
+            'type' => 'datetime',
+            'mysql_type' => 'datetime',
+            'not null' => FALSE,
+          ),
+        ),
+        'primary key' => array('fileid'),
+      );
+    
+      $schema['ba_filelist'] = array(
+        'description' => 'File list',
+        'fields' => array(
+          'fileid' => array(
+            'description' => 'File id',
+            'type' => 'serial',
+            'unsigned' => TRUE,
+            'not null' => TRUE,
+          ),
+          'filename' => array(
+            'description' => 'File name',
+            'type' => 'varchar',
+            'length' => '45',
+            'not null' => TRUE,
+          ),
+          'sourcepath' => array(
+            'description' => 'Source path',
+            'type' => 'varchar',
+            'length' => '255',
+            'not null' => FALSE,
+          ),
+          'parentpath' => array(
+            'description' => 'Parent path',
+            'type' => 'varchar',
+            'length' => '255',
+            'not null' => FALSE,
+          ),
+          'filepath' => array(
+            'description' => 'File path',
+            'type' => 'varchar',
+            'length' => '255',
+            'not null' => TRUE,
+          ),
+          'last_modified' => array(
+            'description' => 'Last modified date',
+            'type' => 'datetime',
+            'mysql_type' => 'datetime',
+            'not null' => FALSE,
+          ),
+          'ext' => array(
+            'description' => 'File extension',
+            'type' => 'varchar',
+            'length' => '15',
+            'not null' => FALSE,
+          ),
+          'filesize' => array(
+            'description' => 'File size',
+            'type' => 'int',
+            'unsigned' => TRUE,
+            'not null' => FALSE,
+          ),
+          'deletedby' => array(
+            'description' => 'Deleted by who?',
+            'type' => 'varchar',
+            'length' => '20',
+            'not null' => TRUE,
+          ),
+          'deletedtime' => array(
+            'description' => 'Date time when delete',
+            'type' => 'datetime',
+            'mysql_type' => 'datetime',
+            'not null' => TRUE,
+          ),
+        ),
+        'primary key' => array('fileid'),
+      );
+
+    return $schema;
+}
