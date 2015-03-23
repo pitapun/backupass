@@ -136,14 +136,25 @@ function backupass_admin() {
     '#required' => TRUE,
   );
   
+  $form['backupass_next_execution'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Next corn job?'),
+    '#default_value' => variable_get('backupass_next_execution', '30'),
+    '#size' => 100,
+    '#maxlength' => 200,
+    '#description' => t("System will clean the file marked as deleted in backup and archive folder."),
+    '#required' => TRUE,
+  );
+  
   $form = system_settings_form($form);
   $form['link'] = array(
       '#type' => 'item',
       '#title' => t('Clean deleted file manually'),
-      '#markup' => l(t('Force clean deleted file'),'node',array(
+      '#markup' => l(t('Force clean deleted file'),'backupass/cleanup',array(
             'attributes' => array(
             'onclick' => 'if(!confirm("Really Delete?")){return false;}',
-        )
+            ),
+          'query' => array('forcestart' => 'y'),
       )),
       //'#attributes' => array('onclick' => 'if(!confirm("Really Delete?")){return false;}'),
       );
@@ -157,7 +168,53 @@ function backupass_main_form()
     $output['tableform'] = drupal_get_form('backupass_form');
     return $output;
 }
+
+function backupass_cleanup()
+{
+    $output = array();
+    if(isset($_GET["forcestart"]) && $_GET["forcestart"])
+    {
+        $sql = db_select("ba_filelist","f");
+        $sql->fields("f",array('fileid', 'sourcepath', 'parentpath', 'filepath'));
+        $sql->condition("deletedby","","<>");
+    }
+    else
+    {
+        $sql = db_select("ba_filelist","f");
+        $sql->fields("f",array('fileid', 'sourcepath', 'parentpath', 'filepath'));
+        $sql->condition("deletedby","","<>");
+        $sql->where("deletedtime + INTERVAL ".variable_get('backupass_delete_timeout',30)." DAY < now()");
+    }
+    //drupal_set_message($sql);
+    $results = $sql->execute();
+    foreach($results as $row)
+    {
+        drupal_set_message("Delete file:".$row->fileid." ".$row->sourcepath.$row->parentpath."/".$row->filepath);
+        file_unmanaged_delete(variable_get('backupass_target_path').$row->parentpath."/".$row->filepath);
+        file_unmanaged_delete(variable_get('backupass_backup_path').$row->parentpath."/".$row->filepath);
+        $sqla = db_select("ba_file_archive","a");
+        $sqla->fields("a",array('fileid','path'));
+        $sqla->condition("a.fileid",$row->fileid,"=");
+        $archivefile = $sqla->execute();
+        foreach($archivefile as $file)
+        {
+            drupal_set_message("Delete archive file:".$file->path);
+            file_unmanaged_delete($file->path);
+        }
+        db_delete("ba_file_archive")->condition("fileid",$row->fileid,"=")->execute();
+        db_delete("ba_filelist")->condition("fileid",$row->fileid,"=")->execute();
+    }
+    
+    return $output;
+}
+
+function backupass_cron() {
+  watchdog('backupass', 'backupass ran');
+  backupass_cleanup();
+}
+/*
 function backupass_admin_submit($form, &$form_state)
 {
     dsm($form_state);
 }
+*/
