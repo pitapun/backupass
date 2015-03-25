@@ -130,6 +130,31 @@ function backupass_schema()
         ),
         'primary key' => array('fileid'),
       );
+      
+    $schema['ba_user_path'] = array(
+      'description' => 'TODO: please describe this table!',
+      'fields' => array(
+        'user_path_id' => array(
+          'description' => 'ID of records',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'userid' => array(
+          'description' => 'User id',
+          'type' => 'varchar',
+          'length' => '30',
+          'not null' => TRUE,
+        ),
+        'path' => array(
+          'description' => 'Parent path',
+          'type' => 'varchar',
+          'length' => '300',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('user_path_id'),
+    );
 
     return $schema;
 }

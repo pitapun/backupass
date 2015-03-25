@@ -58,6 +58,16 @@ function backupass_menu() {
       'type' => MENU_NORMAL_ITEM
     );
     
+    $items['backupass/userpath']= array(
+      'title' => 'Set user path',
+      'description' => t('Set user access right'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('backupass_userpath'),
+      'access arguments' => array("administer backupass settings"),
+      'file' => 'backupass_userpath.inc',
+      'type' => MENU_NORMAL_ITEM
+    );
+    
     return $items;
 }
 
