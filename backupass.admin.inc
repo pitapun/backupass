@@ -65,12 +65,33 @@ function backupass_form($form, $form_state)
     global $user;
     $form = array();
 	$prejob = false;
-    if(isset($form_state['values']['adminaction']))
+    $showallfile = false;
+    foreach($user->roles as $role)
     {
-    	if ($form_state['values']['adminaction'] == 1)
+        if($role == "administrator" || $role == "Operations admin")
+            $showallfile = true;
+        
+    }
+    //dsm($form_state);
+    if(isset($form_state["clicked_button"]["#value"]) and $form_state["clicked_button"]["#value"] != "")
+    {
+        //Find duplicate record
+    	if ($form_state["clicked_button"]["#value"] == "Find duplicate file")
     	{
             $prejob = true;
             $query = "select * from (SELECT `fileid`,`filename`,COUNT(`fileid`) as `FileCount` FROM `ba_filelist` where deletedby='' GROUP BY `filename`,`last_modified`,`filesize` ) as a where a.filecount > 1";
+            if(!$showallfile)
+                        $query = "Select * from 
+                                (Select `fileid`,`filename`,COUNT(`fileid`) as `FileCount`  from 
+                                (
+                                SELECT
+                                * 
+                                FROM `ba_filelist` as a
+                                join ba_user_path as b
+                                on a.`parentpath` like concat(b.`path`, '%')
+                                where deletedby='' GROUP BY `filename`,`last_modified`,`filesize` ,parentpath
+                                ) as a group by `filename`,`last_modified`,`filesize` 
+                                ) as b where FileCount > 1";
             $pools = db_query($query);
             //$pools = $sql->execute();
             $rows = array();
@@ -80,6 +101,7 @@ function backupass_form($form, $form_state)
                 {
                     $sql = db_select('ba_filelist', 'f');
                     $sql->join('ba_file_version','v', 'f.fileid = v.fileid');
+                    
                     $sql->fields('f',array('fileid','filename','sourcepath',
                             'parentpath','filepath','last_modified',
                             'ext','filesize'))
@@ -101,25 +123,7 @@ function backupass_form($form, $form_state)
                 }
             }
 	}
-        else if ($form_state['values']['adminaction'] == 3)
-        {
-            //drupal_set_message("set delete here");
-            
-            //dsm($form_state);
-            $options = $form_state["complete form"]["backass_table"]["#options"];
-            foreach($form_state["values"]["backass_table"] as $key=>$value)
-            {
-                if(is_string($value))
-                {
-                    //dsm($options[$key]);
-                    //drupal_set_message("You will delete the following files, do you confirm?");
-                    //drupal_set_message($options[$key]["fileid"]);
-                    $sql = db_update("ba_filelist")->fields(array('deletedby'=>$user->name,'deletedtime'=>date("Y-m-d H:i:s", time())))
-                            ->condition("fileid",$options[$key]["fileid"],"=");
-                    $sql->execute();
-                }
-            }
-        }
+        
 		
         if($prejob)
         {
@@ -136,6 +140,16 @@ function backupass_form($form, $form_state)
                     );
 
             $form = array();
+            
+            $form['submit1'] = array(
+                '#type' => 'submit', '#value'=>t('Delete')
+            );
+            $form['submit2'] = array(
+                '#type' => 'submit', '#value'=>t('Find duplicate file')
+            );
+            $form['submit0'] = array(
+                '#type' => 'submit', '#value'=>t('Reset Result')
+            );
             $form['backass_action']['adminaction'] = array(
                     '#type' => 'select',
                     '#title' => 'Actions',
@@ -151,8 +165,12 @@ function backupass_form($form, $form_state)
               '#empty' => t('No file found.'),
               '#attributes' => array('class' => array('back_ass'))
             ); 
-            $form['submit'] = array(
-                    '#type' => 'submit', '#value'=>t('Submit')
+
+            $form['submit3'] = array(
+                '#type' => 'submit', '#value'=>t('Delete')
+            );
+            $form['submit4'] = array(
+                '#type' => 'submit', '#value'=>t('Find duplicate file')
             );
             return $form;
         }
@@ -170,9 +188,11 @@ function backupass_form($form, $form_state)
         'version' => t('Version')   
 	);
     
+    
     $sql = db_select('ba_filelist', 'f')->extend('PagerDefault')->limit(25);
     $sql->join('ba_file_version','v', 'f.fileid = v.fileid');
-    
+    if(!$showallfile)
+        $sql->join ('ba_user_path', 'up', 'f.parentpath like CONCAT(up.path,\'%\')');
     $sql->fields('f',array('fileid','filename','sourcepath',
             'parentpath','filepath','last_modified',
             'ext','filesize'))
@@ -229,12 +249,11 @@ function backupass_form($form, $form_state)
         );
     }
     
-    $form['backass_action']['adminaction'] = array(
-      '#type' => 'select',
-      '#title' => 'Actions',
-      '#options' => array(
-          1 => t('Find Duplicate'), 2=> t('Download Files'), 3=> t('Delete Files')
-      )
+    $form['submit1'] = array(
+        '#type' => 'submit', '#value'=>t('Delete')
+    );
+    $form['submit2'] = array(
+        '#type' => 'submit', '#value'=>t('Find duplicate file')
     );
  
     $form['backass_table'] = array(
@@ -245,19 +264,46 @@ function backupass_form($form, $form_state)
         '#attributes' => array('class' => array('back_ass'))
     ); 
 
+    $form['submit3'] = array(
+        '#type' => 'submit', '#value'=>t('Delete')
+    );
+    $form['submit4'] = array(
+        '#type' => 'submit', '#value'=>t('Find duplicate file')
+    );
+    
     $form['pager'] = array('#markup' => theme('pager'));
     
-    $form['submit'] = array(
-        '#type' => 'submit', '#value'=>t('Submit')
-    );
     return $form;
 }
 
 function backupass_form_submit($form, &$form_state)
 {
-    $current_url =  $_SERVER['HTTP_HOST'] . request_uri();
-    //dsm($form_state);
-    $form_state['rebuild'] = TRUE;
+    global $user;
+    if(isset($form_state["clicked_button"]["#value"]) and $form_state["clicked_button"]["#value"] != ""){
+        //Delete user
+        if ($form_state["clicked_button"]["#value"] == "Delete")
+        {
+            //drupal_set_message("set delete here");
+            
+            //dsm($form_state);
+            $options = $form_state["complete form"]["backass_table"]["#options"];
+            foreach($form_state["values"]["backass_table"] as $key=>$value)
+            {
+                if(is_string($value))
+                {
+                    //dsm($options[$key]);
+                    //drupal_set_message("You will delete the following files, do you confirm?");
+                    //drupal_set_message($options[$key]["fileid"]);
+                    $sql = db_update("ba_filelist")->fields(array('deletedby'=>$user->name,'deletedtime'=>date("Y-m-d H:i:s", time())))
+                            ->condition("fileid",$options[$key]["fileid"],"=");
+                    $sql->execute();
+                }
+            }
+        }
+        //Find duplicate
+        if ($form_state["clicked_button"]["#value"] == "Find duplicate file")
+            $form_state['rebuild'] = TRUE;
+    }
 }
 
 

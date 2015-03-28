@@ -76,7 +76,7 @@ function backupass_schema()
           'filename' => array(
             'description' => 'File name',
             'type' => 'varchar',
-            'length' => '45',
+            'length' => '100',
             'not null' => TRUE,
           ),
           'sourcepath' => array(
@@ -106,7 +106,7 @@ function backupass_schema()
           'ext' => array(
             'description' => 'File extension',
             'type' => 'varchar',
-            'length' => '15',
+            'length' => '20',
             'not null' => FALSE,
           ),
           'filesize' => array(
@@ -119,7 +119,8 @@ function backupass_schema()
             'description' => 'Deleted by who?',
             'type' => 'varchar',
             'length' => '20',
-            'not null' => TRUE,
+            'not null' => FALSE,
+            'default' => '',
           ),
           'deletedtime' => array(
             'description' => 'Date time when delete',
@@ -132,7 +133,7 @@ function backupass_schema()
       );
       
     $schema['ba_user_path'] = array(
-      'description' => 'TODO: please describe this table!',
+      'description' => 'Store which user using which path',
       'fields' => array(
         'user_path_id' => array(
           'description' => 'ID of records',

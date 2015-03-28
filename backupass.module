@@ -30,22 +30,13 @@ function backupass_menu() {
       'file' => 'backupass_getfile.inc',
       'type' => MENU_NORMAL_ITEM
     );
-  
-    $items['admin/settings/backupass'] = array(
-        'title' => 'Backup Assistant',
-        'description' => 'Find and manage backup file.',
-        'page callback' => 'backupass_main_form',
-        'access arguments' => array('access backupass'),
-        'weight' => 0,
-        'file' => 'backupass.admin.inc',
-    );
     
-    $items['admin/settings/backupass_setting'] = array(
+    $items['backupass/setting'] = array(
       'title' => 'Backupass setting',
       'description' => 'Set backup bath here',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('backupass_admin'),
-      'access arguments' => array('administer backupass settings'),
+      'access arguments' => array('access backupass setting'),
       'type' => MENU_NORMAL_ITEM,
      );
     
@@ -53,7 +44,7 @@ function backupass_menu() {
       'title' => 'Clean up',
       'description' => t('Clean up all deleted file'),
       'page callback' => 'backupass_cleanup',
-      'access arguments' => array("administer backupass cleanup"),
+      'access arguments' => array("access backupass cleanup"),
       'file' => 'backupass_version.inc',
       'type' => MENU_NORMAL_ITEM
     );
@@ -63,8 +54,16 @@ function backupass_menu() {
       'description' => t('Set user access right'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('backupass_userpath'),
-      'access arguments' => array("administer backupass settings"),
+      'access arguments' => array('access backupass setting'),
       'file' => 'backupass_userpath.inc',
+      'type' => MENU_NORMAL_ITEM
+    );
+    
+    $items['backupass/email']= array(
+      'title' => 'Email',
+      'description' => t('send email'),
+      'page callback' => 'backupass_email',
+      'access arguments' => array('access content'),
       'type' => MENU_NORMAL_ITEM
     );
     
@@ -73,11 +72,11 @@ function backupass_menu() {
 
 function backupass_permission() {
   $permissions = array(
-    'administer backupass setting' => array(
+    'access backupass setting' => array(
       'title' => t('Admin backupass'),
       'description' => t('Admin the setting of backupass.'),
     ),
-    'administer backupass cleanup' => array(
+    'access backupass cleanup' => array(
       'title' => t('Clear deleted file'),
       'description' => t('Clean up deleted file.'),
       //'restrict access' => TRUE,
@@ -101,6 +100,20 @@ function backupass_permission() {
   }
 
   return $permissions;
+}
+
+function backupass_email()
+{
+    $content = array();
+    if(isset($_GET["message"]) && $_GET["message"] != "")
+    {
+        global $language;
+        $params['subject'] = t(variable_get('backupass_email_subject'));
+        $params['body']    = array(t($_GET["message"]));
+        drupal_mail('smtp', '', variable_get('backupass_admin_email'), $language, $params);
+        drupal_set_message("email sent");
+    }
+    return $content;
 }
 
 function backupass_admin() {
@@ -136,16 +149,37 @@ function backupass_admin() {
     '#required' => TRUE,
   );
   
+  $form['backupass_admin_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Administrator email'),
+    '#default_value' => variable_get('backupass_admin_email'),
+    '#size' => 30,
+    '#maxlength' => 60,
+    '#description' => t("Email of administrator, system message will send to this email."),
+    '#required' => TRUE,
+  );
+  
+  $form['backupass_email_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email subject'),
+    '#default_value' => variable_get('backupass_email_subject','Email from backupass'),
+    '#size' => 30,
+    '#maxlength' => 60,
+    '#description' => t("Subject will be used when this system send out alert."),
+    '#required' => TRUE,
+  );
+  
   $form['backupass_delete_timeout'] = array(
     '#type' => 'textfield',
     '#title' => t('Clean deleted file in how many day(s)?'),
     '#default_value' => variable_get('backupass_delete_timeout', '30'),
-    '#size' => 100,
-    '#maxlength' => 200,
+    '#size' => 4,
+    '#maxlength' => 6,
     '#description' => t("System will clean the file marked as deleted in backup and archive folder."),
     '#required' => TRUE,
   );
   
+  /*
   $form['backupass_next_execution'] = array(
     '#type' => 'textfield',
     '#title' => t('Next corn job?'),
@@ -155,6 +189,7 @@ function backupass_admin() {
     '#description' => t("System will clean the file marked as deleted in backup and archive folder."),
     '#required' => TRUE,
   );
+  */
   
   $form = system_settings_form($form);
   $form['link'] = array(
